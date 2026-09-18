@@ -1,6 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-  <path fill="#111111" d="M20 2L38 20H20Z"/>
-  <path fill="#ffffff" stroke="#111111" stroke-width="1" d="M38 20L20 38V20Z"/>
-  <path fill="#1a5cff" d="M20 38L2 20H20Z"/>
-  <path fill="#ff6a00" d="M2 20L20 2V20Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <clipPath id="face">
+      <circle cx="60" cy="60" r="28"/>
+    </clipPath>
+    <radialGradient id="skin" cx="42%" cy="36%" r="70%">
+      <stop offset="0%" stop-color="#d8d3e6"/>
+      <stop offset="55%" stop-color="#9e96b8"/>
+      <stop offset="100%" stop-color="#6a5a8f"/>
+    </radialGradient>
+    <path id="top" d="M 16,60 A 44,44 0 0,1 104,60"/>
+    <path id="bot" d="M 104,60 A 44,44 0 0,1 16,60"/>
+  </defs>
+  <circle cx="60" cy="60" r="58.5" fill="#efe6d0" stroke="#5b2d9a" stroke-width="2.4"/>
+  <circle cx="60" cy="60" r="53.5" fill="none" stroke="#7a4bb8" stroke-width="0.8"/>
+  <text fill="#4a2278" font-family="Times New Roman, Times, serif" font-size="6.2" font-weight="700" letter-spacing="0.8">
+    <textPath href="#top" startOffset="50%" text-anchor="middle">UNITED COSMIC ADMINISTRATION</textPath>
+  </text>
+  <text fill="#4a2278" font-family="Times New Roman, Times, serif" font-size="6.2" font-weight="700" letter-spacing="0.8">
+    <textPath href="#bot" startOffset="50%" text-anchor="middle">FOR HUMAN AFFAIRS</textPath>
+  </text>
+  <circle cx="60" cy="60" r="32.5" fill="#4e2e7a" stroke="#5b2d9a" stroke-width="1.6"/>
+  <g clip-path="url(#face)">
+    <circle cx="60" cy="60" r="28" fill="#5a3d82"/>
+    <ellipse cx="60" cy="63" rx="17.5" ry="21.5" fill="url(#skin)"/>
+    <ellipse cx="52" cy="64" rx="6.4" ry="8.2" fill="#16101f" transform="rotate(-16 52 64)"/>
+    <ellipse cx="68" cy="64" rx="6.4" ry="8.2" fill="#16101f" transform="rotate(16 68 64)"/>
+    <ellipse cx="50.6" cy="61.2" rx="1.5" ry="2.1" fill="#e4d7ff" transform="rotate(-16 50.6 61.2)"/>
+    <ellipse cx="66.6" cy="61.2" rx="1.5" ry="2.1" fill="#e4d7ff" transform="rotate(16 66.6 61.2)"/>
+    <path d="M56.5 76.5 Q60 79 63.5 76.5" fill="none" stroke="#3b2a58" stroke-width="1.15" stroke-linecap="round"/>
+  </g>
 </svg>
