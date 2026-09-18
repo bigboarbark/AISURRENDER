@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useCopy } from '../i18n/copy'
 
 function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
@@ -27,15 +28,16 @@ function animateTo(
 
 export function InspectLoading({
   onDone,
-  label = 'AI正在检视...',
+  label,
   theme = 'light',
 }: {
   onDone: () => void
   label?: string
   theme?: 'light' | 'dark'
 }) {
+  const t = useCopy()
   const [pct, setPct] = useState(0)
-  const [text, setText] = useState(label)
+  const [finishing, setFinishing] = useState(false)
   const done = useRef(onDone)
   done.current = onDone
 
@@ -53,7 +55,7 @@ export function InspectLoading({
         if (!cancelled) setPct(n)
       })
       if (cancelled) return
-      setText('快将完成...')
+      setFinishing(true)
       await sleep(500)
       if (!cancelled) done.current()
     }
@@ -62,14 +64,14 @@ export function InspectLoading({
     return () => {
       cancelled = true
     }
-  }, [label])
+  }, [])
 
   return (
     <div className={`inspect-screen inspect-${theme}`}>
       <div className="inspect-page">
         <div className="inspect-card">
-          <p className="inspect-kicker">inspired from mbti</p>
-          <p className="inspect-label">{text}</p>
+          <p className="inspect-kicker">{t.inspect.kicker}</p>
+          <p className="inspect-label">{finishing ? t.inspect.almost : (label ?? t.inspect.viewing)}</p>
           <div
             className="inspect-bar"
             aria-valuemin={0}

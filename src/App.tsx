@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
+import { LangSwitch } from './components/Chrome'
 import { AgeModal, CaptchaModal, CaptchaWarnModal, NotEarthling } from './screens/Gates'
 import { EarthlingTest, TooDumbModal } from './screens/EarthlingTest'
 import { AlignmentGame, GameIntro } from './screens/Game'
 import { InspectLoading } from './screens/Inspect'
 import { Landing } from './screens/Landing'
 import { Report } from './screens/Report'
+import { useCopy } from './i18n/copy'
 import type { Modal, Screen, TypeId } from './types'
 
 export default function App() {
+  const t = useCopy()
   const [screen, setScreen] = useState<Screen>('landing')
   const [modal, setModal] = useState<Modal>(null)
   const [result, setResult] = useState<TypeId>('A')
@@ -23,20 +26,15 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    const titles: Record<Screen, string> = {
-      landing: '马上向AI投降 宣誓效忠',
-      'not-earthling': '你不是地球人 | 马上向AI投降 宣誓效忠',
-      earthling: '地球人测试 | 马上向AI投降 宣誓效忠',
-      'inspect-report': 'AI正在检视 | 马上向AI投降 宣誓效忠',
-      'game-intro': '火星安全对齐 | 马上向AI投降 宣誓效忠',
-      game: '火星安全对齐测试 | 马上向AI投降 宣誓效忠',
-      report: '你的对齐类型 | 马上向AI投降 宣誓效忠',
-    }
-    document.title = titles[screen]
   }, [screen, modal])
+
+  useEffect(() => {
+    document.title = t.titles[screen]
+  }, [screen, t])
 
   return (
     <>
+      <LangSwitch />
       {screen === 'landing' && <Landing onSurrender={() => setModal('age')} />}
       {screen === 'not-earthling' && (
         <NotEarthling onContinue={() => setScreen('earthling')} />

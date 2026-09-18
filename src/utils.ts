@@ -26,9 +26,3 @@ export function scoreGap(scores: Scores): number {
   const values = [scores.A, scores.B, scores.C, scores.D].sort((a, b) => b - a)
   return values[0] - values[1]
 }
-
-export function formatBirthYear(year: number): string {
-  if (year < 0) return `${Math.abs(year)} BC`
-  if (year === 0) return '公元 0 年'
-  return `${year} 年`
-}

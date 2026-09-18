@@ -1,16 +1,47 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCopy } from '../i18n/copy'
+import { useLocale } from '../i18n/locale'
+
+export function LangSwitch() {
+  const t = useCopy()
+  const { locale, setLocale } = useLocale()
+
+  return (
+    <div className="lang-switch" role="group" aria-label={t.lang.group}>
+      <button
+        type="button"
+        className={locale === 'zh' ? 'is-on' : ''}
+        aria-pressed={locale === 'zh'}
+        onClick={() => setLocale('zh')}
+      >
+        {t.lang.zh}
+      </button>
+      <span aria-hidden="true">/</span>
+      <button
+        type="button"
+        className={locale === 'en' ? 'is-on' : ''}
+        aria-pressed={locale === 'en'}
+        onClick={() => setLocale('en')}
+      >
+        {t.lang.en}
+      </button>
+    </div>
+  )
+}
 
 export function Header() {
+  const t = useCopy()
+
   return (
     <header className="site-header">
       <div className="brand-watch">
-        马上投降 <small>AI IS WATCHING YOU</small>
+        {t.header.brand} <small>{t.header.watch}</small>
       </div>
       <nav>
         <ul className="nav-links">
           <li>
             <a className="active" href="#top">
-              马上向AI投降 宣誓效忠
+              {t.header.nav}
             </a>
           </li>
         </ul>

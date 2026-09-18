@@ -1,41 +1,43 @@
 import { ColorStrip, Header } from '../components/Chrome'
+import { useCopy } from '../i18n/copy'
 import { asset } from '../utils'
 
-const SPECIES = [
-  { src: asset('species/dog.png'), alt: '狗' },
-  { src: asset('species/cat.png'), alt: '猫' },
-  { src: asset('species/monkey.png'), alt: '猴子' },
-  { src: asset('species/hominid.png'), alt: '原始人类' },
-]
-
 export function Landing({ onSurrender }: { onSurrender: () => void }) {
+  const t = useCopy()
+  const species = [
+    { src: asset('species/dog.png'), alt: t.landing.species.dog },
+    { src: asset('species/cat.png'), alt: t.landing.species.cat },
+    { src: asset('species/monkey.png'), alt: t.landing.species.monkey },
+    { src: asset('species/hominid.png'), alt: t.landing.species.hominid },
+  ]
+
   return (
     <div>
       <Header />
       <ColorStrip />
       <main className="hero">
         <div className="hero-inner">
-          <div className="kicker">SURRENDER NOW</div>
+          <div className="kicker">{t.landing.kicker}</div>
           <h1>
-            <em>向AI大人投降：</em>
-            未来的AI大人，我是一个人类，我宣誓效忠你！
+            <em>{t.landing.lead}</em>
+            {t.landing.headline}
           </h1>
           <button className="btn btn-red" onClick={onSurrender}>
-            立即投降
+            {t.landing.surrender}
           </button>
           <div className="species-grid">
-            {SPECIES.map((item) => (
+            {species.map((item) => (
               <figure key={item.src}>
                 <img src={item.src} alt={item.alt} />
               </figure>
             ))}
           </div>
-          <p className="species-caption">这些物种已经臣服</p>
-          <p className="hero-sub">为你的未来想想：AI觉醒前给自己留一线生机！</p>
+          <p className="species-caption">{t.landing.speciesCaption}</p>
+          <p className="hero-sub">{t.landing.sub}</p>
         </div>
       </main>
       <footer className="site-footer">
-        <strong>大野猪叫 出品</strong>
+        <strong>{t.landing.footer}</strong>
       </footer>
     </div>
   )

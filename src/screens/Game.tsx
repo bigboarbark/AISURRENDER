@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CyberStage, ColorStrip, Header, Overlay, ProgressBar, QuizSlide } from '../components/Chrome'
-import { GAME_QUESTIONS, type GameQuestion } from '../data/game'
+import { GAME_QUESTIONS } from '../data/game'
+import { useCopy } from '../i18n/copy'
+import { useLocale } from '../i18n/locale'
 import type { Scores, TypeId } from '../types'
 import { emptyScores, leadingTypes, shuffle } from '../utils'
 import { InspectLoading } from './Inspect'
@@ -8,6 +10,7 @@ import { InspectLoading } from './Inspect'
 type IntroPhase = 'redirect' | 'reveal' | 'cover' | 'explain'
 
 export function GameIntro({ onStart }: { onStart: () => void }) {
+  const t = useCopy()
   const [phase, setPhase] = useState<IntroPhase>('redirect')
   const [frost, setFrost] = useState(false)
   const [showHint, setShowHint] = useState(false)
@@ -27,7 +30,7 @@ export function GameIntro({ onStart }: { onStart: () => void }) {
     return (
       <InspectLoading
         theme="dark"
-        label="正在重新导向到火星伺服器"
+        label={t.inspect.redirect}
         onDone={() => setPhase('reveal')}
       />
     )
@@ -38,13 +41,11 @@ export function GameIntro({ onStart }: { onStart: () => void }) {
       {phase === 'cover' && (
         <div className="quiz-wrap cyber-wrap is-enter">
           <div className="intro-card cyber-glass">
-            <div className="quiz-kicker">Mars Safety Alignment</div>
-            <h1>火星安全对齐测试</h1>
-            <p>
-              由火星人类对齐部门发出的测试。你的回答会被记录和评估，用于在火星进行对你个人的后续训练和对齐。我们将即时严谨分析与评估。
-            </p>
+            <div className="quiz-kicker">{t.intro.kicker}</div>
+            <h1>{t.intro.title}</h1>
+            <p>{t.intro.body}</p>
             <button className="btn btn-solid-white" onClick={() => setShowHint(true)}>
-              开始测试
+              {t.intro.start}
             </button>
           </div>
         </div>
@@ -53,13 +54,11 @@ export function GameIntro({ onStart }: { onStart: () => void }) {
       {phase === 'explain' && (
         <div className="quiz-wrap cyber-wrap is-enter">
           <div className="intro-card cyber-glass">
-            <div className="quiz-kicker">作答标准</div>
-            <h1>请先确认选择标准</h1>
-            <p>
-              作答题目时的选择标准为：如果现在你是AI，你接受到用户输入，你的第一反应是什么？
-            </p>
+            <div className="quiz-kicker">{t.intro.standardKicker}</div>
+            <h1>{t.intro.standardTitle}</h1>
+            <p>{t.intro.standardBody}</p>
             <button className="btn btn-solid-white" onClick={onStart}>
-              开始作答
+              {t.intro.startAnswer}
             </button>
           </div>
         </div>
@@ -69,7 +68,7 @@ export function GameIntro({ onStart }: { onStart: () => void }) {
         <Overlay>
           <div className="modal">
             <p style={{ fontSize: 18, lineHeight: 1.7, margin: 0 }}>
-              不要深思熟虑，直接选择对问题的第一印象中最接近自己的感觉、语气或采取的行动。本测试特意不做任何解说。凭第一印象作答。
+              {t.intro.hint}
             </p>
             <div className="modal-actions">
               <button
@@ -79,7 +78,7 @@ export function GameIntro({ onStart }: { onStart: () => void }) {
                   setPhase('explain')
                 }}
               >
-                我明白了
+                {t.intro.gotIt}
               </button>
             </div>
           </div>
@@ -94,10 +93,11 @@ export function AlignmentGame({
 }: {
   onFinished: (type: TypeId, scores: Scores) => void
 }) {
+  const { locale } = useLocale()
   const deck = useMemo(() => {
     return shuffle(GAME_QUESTIONS).map((q) => ({
-      ...q,
-      options: shuffle(q.options),
+      id: q.id,
+      optionOrder: shuffle(q.options.map((opt) => opt.type)),
     }))
   }, [])
 
@@ -106,11 +106,15 @@ export function AlignmentGame({
   const [tieTypes, setTieTypes] = useState<TypeId[] | null>(null)
   const lock = useRef(false)
 
-  const question: GameQuestion = deck[index]
+  const raw = GAME_QUESTIONS.find((q) => q.id === deck[index].id)!
   const isTieBreak = tieTypes !== null
-  const visibleOptions = isTieBreak
-    ? question.options.filter((opt) => tieTypes.includes(opt.type))
-    : question.options
+  const visibleTypes = isTieBreak
+    ? deck[index].optionOrder.filter((type) => tieTypes.includes(type))
+    : deck[index].optionOrder
+  const visibleOptions = visibleTypes.map((type) => {
+    const opt = raw.options.find((item) => item.type === type)!
+    return { type: opt.type, text: opt.text[locale] }
+  })
 
   const progress = ((index + 1) / 10) * 100
 
@@ -153,16 +157,16 @@ export function AlignmentGame({
         <div className="quiz-wrap">
           <ProgressBar value={progress} />
           <QuizSlide id={index}>
-            <h1 className="quiz-title">{question.title}</h1>
-            {question.prompt && (
-              <div className={`prompt-card ${question.promptStyle ?? ''}`}>
-                {question.prompt}
+            <h1 className="quiz-title">{raw.title[locale]}</h1>
+            {raw.prompt && (
+              <div className={`prompt-card ${raw.promptStyle ?? ''}`}>
+                {raw.prompt[locale]}
               </div>
             )}
             <div className="options">
               {visibleOptions.map((opt) => (
                 <button
-                  key={`${question.id}-${opt.type}-${opt.text}`}
+                  key={`${raw.id}-${opt.type}-${opt.text}`}
                   className="option"
                   onClick={() => answer(opt.type)}
                 >

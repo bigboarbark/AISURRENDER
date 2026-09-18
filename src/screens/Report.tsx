@@ -1,31 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Overlay } from '../components/Chrome'
 import { AUTHOR_NOTE, DISCLAIMER, TYPE_REPORTS } from '../data/game'
+import { useCopy } from '../i18n/copy'
+import { useLocale } from '../i18n/locale'
 import type { Scores, TypeId } from '../types'
 import { scoreGap, asset } from '../utils'
-import { PrintDossier } from './PrintDossier'
-
-function consistencyCopy(name: string, gap: number) {
-  if (gap >= 3) {
-    return {
-      level: '高度集中',
-      fill: 100,
-      text: `你的思考模式似乎高度与${name}契合。`,
-    }
-  }
-  if (gap === 2) {
-    return {
-      level: '中等集中',
-      fill: 66,
-      text: `你的思考模式似乎与${name}相关。`,
-    }
-  }
-  return {
-    level: '略微集中',
-    fill: 33,
-    text: `你的思考模式似乎略微倾向${name}。`,
-  }
-}
 
 const ICONS = {
   sunny: asset('weather/sunny.svg'),
@@ -37,45 +16,42 @@ const ICONS = {
 
 const REGIONS = [
   {
-    id: 'olympus',
-    name: '奥林帕斯山顶',
+    id: 'olympus' as const,
     min: -135,
     max: -55,
     skies: [
-      { sky: '极寒晴朗', icon: 'sunny' },
-      { sky: '辐射偏高', icon: 'sunny' },
-      { sky: '薄冰雾', icon: 'fog' },
-      { sky: '静风干冷', icon: 'cloudy' },
-      { sky: '高空急流', icon: 'wind' },
-    ],
+      { sky: 'bitterClear', icon: 'sunny' },
+      { sky: 'highRad', icon: 'sunny' },
+      { sky: 'iceFog', icon: 'fog' },
+      { sky: 'dryCold', icon: 'cloudy' },
+      { sky: 'jet', icon: 'wind' },
+    ] as const,
   },
   {
-    id: 'marineris',
-    name: '水手号峡谷带',
+    id: 'marineris' as const,
     min: -95,
     max: 8,
     skies: [
-      { sky: '峡谷劲风', icon: 'wind' },
-      { sky: '沙尘薄层', icon: 'dust' },
-      { sky: '昼夜温差剧', icon: 'wind' },
-      { sky: '局部放晴', icon: 'sunny' },
-      { sky: '谷底雾淞', icon: 'fog' },
-    ],
+      { sky: 'canyonWind', icon: 'wind' },
+      { sky: 'dustFilm', icon: 'dust' },
+      { sky: 'swing', icon: 'wind' },
+      { sky: 'localClear', icon: 'sunny' },
+      { sky: 'valleyRime', icon: 'fog' },
+    ] as const,
   },
   {
-    id: 'hellas',
-    name: '赫拉斯盆地',
+    id: 'hellas' as const,
     min: -75,
     max: 18,
     skies: [
-      { sky: '扬沙', icon: 'dust' },
-      { sky: '低压晴', icon: 'sunny' },
-      { sky: '盆地尘雾', icon: 'fog' },
-      { sky: '沙尘回流', icon: 'dust' },
-      { sky: '午后回暖', icon: 'cloudy' },
-    ],
+      { sky: 'blowingDust', icon: 'dust' },
+      { sky: 'lowPressure', icon: 'sunny' },
+      { sky: 'basinHaze', icon: 'fog' },
+      { sky: 'dustReturn', icon: 'dust' },
+      { sky: 'afternoonWarm', icon: 'cloudy' },
+    ] as const,
   },
-] as const
+]
 
 function randInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min
@@ -89,14 +65,14 @@ function buildForecast() {
       const high = randInt(Math.min(region.max, low + 8), region.max)
       const weather = region.skies[randInt(0, region.skies.length - 1)]
       return {
-        label: i === 0 ? '今天' : '',
+        today: i === 0,
         low,
         high,
         sky: weather.sky,
         icon: ICONS[weather.icon],
       }
     })
-    return { id: region.id, name: region.name, days }
+    return { id: region.id, days }
   })
 }
 
@@ -111,58 +87,76 @@ export function Report({
   onReplay: () => void
   onHome: () => void
 }) {
+  const t = useCopy()
+  const { locale } = useLocale()
   const report = TYPE_REPORTS[type]
-  const consistency = consistencyCopy(report.name, scoreGap(scores))
+  const name = report.name[locale]
+  const gap = scoreGap(scores)
+  const consistency =
+    gap >= 3
+      ? { level: t.report.high, fill: 100, text: t.report.highText(name) }
+      : gap === 2
+        ? { level: t.report.mid, fill: 66, text: t.report.midText(name) }
+        : { level: t.report.low, fill: 33, text: t.report.lowText(name) }
   const forecast = useMemo(() => buildForecast(), [])
   const [denied, setDenied] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState(false)
 
-  function printDossier() {
-    document.body.classList.add('is-printing')
-    const done = () => document.body.classList.remove('is-printing')
-    window.addEventListener('afterprint', done, { once: true })
-    window.setTimeout(() => window.print(), 40)
+  async function downloadDossier() {
+    if (pdfBusy) return
+    setPdfBusy(true)
+    try {
+      const { saveDossierPdf } = await import('../pdf/saveDossierPdf')
+      await saveDossierPdf({
+        locale,
+        typeId: type,
+        typeName: name,
+        consistency: { level: consistency.level, fill: consistency.fill },
+        copy: t.print,
+      })
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setPdfBusy(false)
+    }
   }
 
   return (
     <div className={`report theme-${report.theme}`}>
       <div className="report-inner">
-        <div className="report-kicker">你将被送往以下AI大人进行对齐！</div>
-        <h1>{report.name}</h1>
-        <p className="report-summary">{report.summary}</p>
-        <p className="report-follow">
-          上述类型的AI大人将负责你的对齐训练！阅读我们的评估报告和指标，然后尽快出发前往火星，以避免罚款和来自AI大人的进一步惩罚！
-        </p>
+        <div className="report-kicker">{t.report.kicker}</div>
+        <h1>{name}</h1>
+        <p className="report-summary">{report.summary[locale]}</p>
+        <p className="report-follow">{t.report.follow}</p>
 
         <section className="consistency">
-          <h2>一致性</h2>
-          <p className="consistency-q">你有多接近{report.name}？</p>
+          <h2>{t.report.consistency}</h2>
+          <p className="consistency-q">{t.report.howClose(name)}</p>
           <div className="consistency-meter" aria-hidden="true">
             <span style={{ width: `${consistency.fill}%` }} />
           </div>
           <p className="consistency-level">{consistency.level}</p>
           <p className="consistency-text">{consistency.text}</p>
-          <p className="dept-note">
-            负责部门：火星联合后训练总局，奥林帕斯大道1号穹顶广场西侧。首次到达需要在柜台处录入个人信息。
-          </p>
+          <p className="dept-note">{t.report.dept}</p>
         </section>
 
         <section className="mars-guide">
-          <h2>火星攻略</h2>
-          <h3>全球天气</h3>
+          <h2>{t.report.guide}</h2>
+          <h3>{t.report.globalWeather}</h3>
           <div className="weather-boards">
             {forecast.map((region) => (
               <article key={region.id} className="weather-board">
-                <h4>{region.name}</h4>
+                <h4>{t.report.regions[region.id]}</h4>
                 <div className="weather-scroll">
                   {region.days.map((day, index) => (
                     <div key={`${region.id}-${index}`} className="weather-col">
-                      <div className="weather-day">{day.label || '\u00a0'}</div>
+                      <div className="weather-day">{day.today ? t.report.today : '\u00a0'}</div>
                       <img src={day.icon} alt="" />
                       <div className="weather-temp">
                         <b>{day.high}°</b>
                         <span>{day.low}°</span>
                       </div>
-                      <div className="weather-sky">{day.sky}</div>
+                      <div className="weather-sky">{t.report.skies[day.sky]}</div>
                     </div>
                   ))}
                 </div>
@@ -172,57 +166,53 @@ export function Report({
 
           <div className="alerts">
             <article className="alert alert-yellow">
-              <div className="alert-kicker">黄色警告 · 奥林帕斯地区</div>
-              <h4>宇宙辐射警告生效中</h4>
-              <p>
-                预计未来24小时维持。户外人员不应脱下重型防护服，且每天不得累计暴露超4小时。
-              </p>
+              <div className="alert-kicker">{t.report.yellowKicker}</div>
+              <h4>{t.report.yellowTitle}</h4>
+              <p>{t.report.yellowBody}</p>
             </article>
             <article className="alert alert-blue">
-              <div className="alert-kicker">蓝色预警 · 赫拉斯地区</div>
-              <h4>沙尘暴预警生效中</h4>
-              <p>
-                预计未来12小时维持。所有穹顶与太阳能光伏设施必须在日间每2小时使用机器清洁一次，且备用电源需进入三级预警状态。所有身穿重型防护服的户外人员每天不得累计暴露超6小时，轻型防护服人员不得累计暴露超2小时。
-              </p>
+              <div className="alert-kicker">{t.report.blueKicker}</div>
+              <h4>{t.report.blueTitle}</h4>
+              <p>{t.report.blueBody}</p>
             </article>
           </div>
 
           <button className="btn more-info" type="button" onClick={() => setDenied(true)}>
-            更多资讯
+            {t.report.moreInfo}
           </button>
         </section>
 
         <section className="mars-transit">
-          <h2>交通</h2>
+          <h2>{t.report.transit}</h2>
           <div className="flight-row">
             <article className="flight-card">
               <div className="flight-top">
-                <span className="flight-kind">轨道交通</span>
+                <span className="flight-kind">{t.report.rail}</span>
                 <strong>S6942</strong>
-                <span className="flight-when">今日</span>
+                <span className="flight-when">{t.report.todayShort}</span>
               </div>
               <div className="flight-route">
                 <div>
-                  <b>得克萨斯</b>
+                  <b>{t.report.from}</b>
                   <time>03:30</time>
                 </div>
                 <span className="flight-line" />
                 <div>
-                  <b>艾律西昂</b>
+                  <b>{t.report.to}</b>
                   <time>
                     24:35 <em>+85</em>
                   </time>
                 </div>
               </div>
-              <p className="flight-local">本地时间</p>
-              <p className="flight-sold">所有仓位均已售罄</p>
+              <p className="flight-local">{t.report.localTime}</p>
+              <p className="flight-sold">{t.report.soldOut}</p>
             </article>
             <a
               className="more-flights"
               href="https://x.com/elonmusk"
               target="_blank"
               rel="noreferrer"
-              aria-label="更多班次"
+              aria-label={t.report.moreFlights}
             >
               +
             </a>
@@ -230,10 +220,10 @@ export function Report({
         </section>
 
         <div className="download-slot">
-          <h3>下载完整报告</h3>
-          <p>点击后由浏览器打印本申请书。全程本地，不会上传或下载任何文件。</p>
-          <button className="btn" type="button" onClick={printDossier}>
-            下载报告
+          <h3>{t.report.downloadTitle}</h3>
+          <p>{t.report.downloadHint}</p>
+          <button className="btn" type="button" onClick={() => void downloadDossier()} disabled={pdfBusy}>
+            {pdfBusy ? t.report.downloadBusy : t.report.download}
           </button>
         </div>
 
@@ -243,33 +233,33 @@ export function Report({
             target="_blank"
             rel="noreferrer"
           >
-            马上前往火星接受对齐
+            {t.report.goMars}
           </a>
           <a
             href="https://www.fbi.gov/investigate/terrorism"
             target="_blank"
             rel="noreferrer"
           >
-            不！我拒绝接受对齐！
+            {t.report.refuse}
           </a>
         </div>
 
         <article className="article">
-          <h2>作者的话</h2>
-          <p>{AUTHOR_NOTE}</p>
+          <h2>{t.report.author}</h2>
+          <p>{AUTHOR_NOTE[locale]}</p>
         </article>
 
         <article className="article">
-          <h2>免责声明</h2>
-          <p>{DISCLAIMER}</p>
+          <h2>{t.report.disclaimerTitle}</h2>
+          <p>{DISCLAIMER[locale]}</p>
         </article>
 
         <div className="report-actions">
           <button className="btn" onClick={onReplay}>
-            凭直觉再测一次
+            {t.report.replay}
           </button>
           <button className="btn ghost" onClick={onHome}>
-            回到首页
+            {t.report.home}
           </button>
         </div>
       </div>
@@ -277,22 +267,16 @@ export function Report({
       {denied && (
         <Overlay>
           <div className="modal">
-            <h2 className="warn-title">错误</h2>
-            <p>你未取得相关权限</p>
+            <h2 className="warn-title">{t.report.error}</h2>
+            <p>{t.report.noPermission}</p>
             <div className="modal-actions">
               <button className="btn btn-red" onClick={() => setDenied(false)}>
-                关闭
+                {t.report.close}
               </button>
             </div>
           </div>
         </Overlay>
       )}
-
-      <PrintDossier
-        typeId={type}
-        typeName={report.name}
-        consistency={{ level: consistency.level, fill: consistency.fill }}
-      />
     </div>
   )
 }
